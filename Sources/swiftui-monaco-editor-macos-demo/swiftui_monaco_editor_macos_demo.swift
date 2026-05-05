@@ -3,7 +3,32 @@ import Foundation
 import SwiftUI
 import WebKit
 
-private let sampleCode = """
+private enum CodeSampleKind: String, CaseIterable, Identifiable {
+    case swift = "Swift"
+    case javascript = "JavaScript"
+
+    var id: String { rawValue }
+
+    var monacoLanguage: String {
+        switch self {
+        case .swift:
+            "swift"
+        case .javascript:
+            "javascript"
+        }
+    }
+
+    var sampleCode: String {
+        switch self {
+        case .swift:
+            swiftSampleCode
+        case .javascript:
+            javaScriptSampleCode
+        }
+    }
+}
+
+private let swiftSampleCode = """
 import Foundation
 
 struct Greeter {
@@ -23,6 +48,18 @@ let summary = ["Monaco", "Editor", "SwiftUI"]
 print(summary)
 """
 
+private let javaScriptSampleCode = """
+const buildLabel = (value) => `item-${value}`
+
+const summary = ["monaco", "editor", "selection"]
+  .map(buildLabel)
+  .filter((value) => value.includes("o"))
+  .join(" | ")
+  .toUpperCase()
+
+console.log(summary)
+"""
+
 @main
 struct MonacoEditorDemoApp: App {
     init() {
@@ -39,15 +76,28 @@ struct MonacoEditorDemoApp: App {
 }
 
 private struct ContentView: View {
-    @State private var code = sampleCode
+    @State private var sampleKind: CodeSampleKind = .swift
+    @State private var code = swiftSampleCode
     @State private var status = "等待 Monaco 初始化"
     @State private var bridge = MonacoEditorBridge()
 
     var body: some View {
         VStack(spacing: 12) {
             HStack {
+                Picker("代码", selection: $sampleKind) {
+                    ForEach(CodeSampleKind.allCases) { kind in
+                        Text(kind.rawValue).tag(kind)
+                    }
+                }
+                .frame(width: 150)
+                .onChange(of: sampleKind) { _, newValue in
+                    code = newValue.sampleCode
+                    bridge.setLanguage(newValue.monacoLanguage)
+                }
+
                 Button("加载示例") {
-                    code = sampleCode
+                    code = sampleKind.sampleCode
+                    bridge.setLanguage(sampleKind.monacoLanguage)
                 }
 
                 Button("Duplicate 当前行 (⌘D)") {
@@ -66,7 +116,12 @@ private struct ContentView: View {
                 Spacer()
             }
 
-            MonacoEditorView(text: $code, status: $status, bridge: bridge)
+            MonacoEditorView(
+                text: $code,
+                status: $status,
+                language: sampleKind.monacoLanguage,
+                bridge: bridge
+            )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(16)
@@ -76,6 +131,7 @@ private struct ContentView: View {
 private struct MonacoEditorView: NSViewRepresentable {
     @Binding var text: String
     @Binding var status: String
+    let language: String
     let bridge: MonacoEditorBridge
 
     func makeCoordinator() -> Coordinator {
@@ -90,6 +146,7 @@ private struct MonacoEditorView: NSViewRepresentable {
 
     func updateNSView(_ nsView: MonacoContainerView, context: Context) {
         context.coordinator.parent = self
+        bridge.setLanguage(language)
         context.coordinator.pushTextIfNeeded(text)
     }
 
@@ -165,6 +222,16 @@ private final class MonacoEditorBridge {
 
     func expandSelection() {
         webView?.evaluateJavaScript("window.expandSelection();")
+    }
+
+    func setLanguage(_ language: String) {
+        guard let payload = try? JSONEncoder().encode(language),
+              let json = String(data: payload, encoding: .utf8)
+        else {
+            return
+        }
+
+        webView?.evaluateJavaScript("window.setEditorLanguage(\(json));")
     }
 }
 

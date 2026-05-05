@@ -24,6 +24,7 @@
     <script>
       let editor = null;
       let pendingValue = "";
+      let pendingLanguage = "swift";
 
       const post = (type, value) => {
         window.webkit.messageHandlers.editor.postMessage({ type, value });
@@ -39,6 +40,20 @@
         if (editor.getValue() !== value) {
           editor.setValue(value);
           editor.setPosition({ lineNumber: 1, column: 1 });
+        }
+      };
+
+      window.setEditorLanguage = (language) => {
+        pendingLanguage = language;
+
+        if (!editor) {
+          return;
+        }
+
+        const model = editor.getModel();
+
+        if (model) {
+          monaco.editor.setModelLanguage(model, language);
         }
       };
 
@@ -67,7 +82,7 @@
       require(["vs/editor/editor.main"], () => {
         editor = monaco.editor.create(document.getElementById("editor"), {
           value: pendingValue,
-          language: "swift",
+          language: pendingLanguage,
           theme: "vs-dark",
           automaticLayout: true,
           minimap: { enabled: true },

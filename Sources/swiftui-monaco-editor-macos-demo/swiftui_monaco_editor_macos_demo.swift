@@ -14,11 +14,22 @@ struct Greeter {
     }
 }
 
-print(Greeter(name: "Monaco").greet())
+let summary = ["Monaco", "Editor", "SwiftUI"]
+    .map { Greeter(name: $0).greet() }
+    .filter { $0.contains("o") }
+    .joined(separator: " | ")
+    .uppercased()
+
+print(summary)
 """
 
 @main
 struct MonacoEditorDemoApp: App {
+    init() {
+        NSApplication.shared.setActivationPolicy(.regular)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -43,6 +54,11 @@ private struct ContentView: View {
                     bridge.duplicateCurrentLine()
                 }
                 .keyboardShortcut("d", modifiers: [.command])
+
+                Button("扩选父节点 (⌘E)") {
+                    bridge.expandSelection()
+                }
+                .keyboardShortcut("e", modifiers: [.command])
 
                 Text(status)
                     .foregroundStyle(.secondary)
@@ -145,6 +161,10 @@ private final class MonacoEditorBridge {
 
     func duplicateCurrentLine() {
         webView?.evaluateJavaScript("window.duplicateCurrentLine();")
+    }
+
+    func expandSelection() {
+        webView?.evaluateJavaScript("window.expandSelection();")
     }
 }
 

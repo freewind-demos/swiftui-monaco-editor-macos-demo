@@ -42,6 +42,14 @@
         }
       };
 
+      window.duplicateCurrentLine = () => {
+        if (!editor) {
+          return;
+        }
+
+        editor.trigger("keyboard", "editor.action.copyLinesDownAction", null);
+      };
+
       require.config({
         paths: {
           vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs",
@@ -57,6 +65,11 @@
           minimap: { enabled: true },
           fontSize: 14,
         });
+
+        editor.addCommand(
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD,
+          () => window.duplicateCurrentLine(),
+        );
 
         editor.onDidChangeModelContent(() => {
           post("change", editor.getValue());

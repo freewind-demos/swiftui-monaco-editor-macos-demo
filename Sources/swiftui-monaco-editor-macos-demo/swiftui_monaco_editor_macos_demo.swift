@@ -30,6 +30,7 @@ struct MonacoEditorDemoApp: App {
 private struct ContentView: View {
     @State private var code = sampleCode
     @State private var status = "等待 Monaco 初始化"
+    @State private var bridge = MonacoEditorBridge()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -38,13 +39,18 @@ private struct ContentView: View {
                     code = sampleCode
                 }
 
+                Button("Duplicate 当前行 (⌘D)") {
+                    bridge.duplicateCurrentLine()
+                }
+                .keyboardShortcut("d", modifiers: [.command])
+
                 Text(status)
                     .foregroundStyle(.secondary)
 
                 Spacer()
             }
 
-            MonacoEditorView(text: $code, status: $status)
+            MonacoEditorView(text: $code, status: $status, bridge: bridge)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(16)
@@ -54,6 +60,7 @@ private struct ContentView: View {
 private struct MonacoEditorView: NSViewRepresentable {
     @Binding var text: String
     @Binding var status: String
+    let bridge: MonacoEditorBridge
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -82,6 +89,7 @@ private struct MonacoEditorView: NSViewRepresentable {
 
         func attach(webView: WKWebView) {
             self.webView = webView
+            parent.bridge.webView = webView
             webView.configuration.userContentController.add(self, name: "editor")
         }
 
@@ -128,6 +136,15 @@ private struct MonacoEditorView: NSViewRepresentable {
                 break
             }
         }
+    }
+}
+
+@MainActor
+private final class MonacoEditorBridge {
+    weak var webView: WKWebView?
+
+    func duplicateCurrentLine() {
+        webView?.evaluateJavaScript("window.duplicateCurrentLine();")
     }
 }
 

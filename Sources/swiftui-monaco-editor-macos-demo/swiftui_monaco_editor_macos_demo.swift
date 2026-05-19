@@ -265,7 +265,7 @@ private final class MonacoContainerView: NSView {
     }
 
     private func loadEditor() {
-        guard let htmlURL = Bundle.module.url(forResource: "editor", withExtension: "html") else {
+        guard let htmlURL = Bundle.main.url(forResource: "editor", withExtension: "html") else {
             return
         }
 

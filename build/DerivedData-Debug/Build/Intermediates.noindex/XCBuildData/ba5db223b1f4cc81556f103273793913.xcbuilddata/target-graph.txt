@@ -1,0 +1,2 @@
+Target dependency graph (1 target)
+Target 'swiftui_monaco_editor_macos_demo' in project 'swiftui_monaco_editor_macos_demo' (no dependencies)

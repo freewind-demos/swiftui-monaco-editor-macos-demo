@@ -1,0 +1,1 @@
+@rpath/swiftui_monaco_editor_macos_demo.debug.dylib
